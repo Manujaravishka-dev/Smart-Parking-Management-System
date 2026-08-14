@@ -1,16 +1,159 @@
 {
   "info": {
-    "_postman_id": "3f2a9c1e-7b4d-4f6a-9e2d-5a8c1b3d7e0f",
+    "_postman_id": "6e4f1a2b-8c3d-4e5f-9a1b-2c3d4e5f6a7b",
     "name": "Smart Parking Management System",
-    "description": "REST API collection for the Smart Parking Management System (SPMS). Requests are added as each microservice is implemented.",
+    "description": "Complete REST API collection for the Smart Parking Management System (SPMS). All requests go through the API Gateway at http://localhost:8080. See README.md for the required startup order (Eureka -> Config Server -> services -> Gateway).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "vehicleId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "spaceId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "reservationId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "paymentId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
   "item": [
+    {
+      "name": "User Service",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Smith\",\n  \"email\": \"alice@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"555-1234\",\n  \"role\": \"DRIVER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "description": "Register a new user. Returns 201 Created with the user profile (password is never returned). Duplicate email returns 409."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "login"
+              ]
+            },
+            "description": "Authenticate a user. Returns 200 with a success message and the user profile. Wrong credentials return 401."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Retrieve a user by id. Returns 200, or 404 if not found."
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Updated\",\n  \"phone\": \"999-9999\",\n  \"role\": \"OWNER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Partially update user fields (name, email, password, phone, role). Fields omitted are left unchanged. Returns 200."
+          },
+          "response": []
+        }
+      ]
+    },
     {
       "name": "Vehicle Service",
       "item": [
         {
-          "name": "Register vehicle",
+          "name": "Create Vehicle",
           "request": {
             "method": "POST",
             "header": [
@@ -24,29 +167,31 @@
               "raw": "{\n  \"userId\": 1,\n  \"vehicleNumber\": \"ABC-1234\",\n  \"vehicleType\": \"CAR\",\n  \"brand\": \"Toyota\",\n  \"model\": \"Camry\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/api/vehicles",
+              "raw": "{{baseUrl}}/api/vehicles",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "vehicles"
               ]
             },
-            "description": "Register a vehicle. Returns 201 Created with the new vehicle including status OUTSIDE."
+            "description": "Register a vehicle. Returns 201 Created with the new vehicle in status OUTSIDE. vehicleType is one of CAR, MOTORCYCLE, TRUCK, BUS, VAN. Duplicate vehicleNumber returns 409."
           },
           "response": []
         },
         {
-          "name": "Get vehicle",
+          "name": "Get Vehicle",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/vehicles/{{vehicleId}}",
+              "raw": "{{baseUrl}}/api/vehicles/{{vehicleId}}",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "vehicles",
                 "{{vehicleId}}"
               ]
@@ -56,16 +201,17 @@
           "response": []
         },
         {
-          "name": "List vehicles by user",
+          "name": "Get User Vehicles",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/vehicles/user/{{userId}}",
+              "raw": "{{baseUrl}}/api/vehicles/user/{{userId}}",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "vehicles",
                 "user",
                 "{{userId}}"
@@ -76,7 +222,7 @@
           "response": []
         },
         {
-          "name": "Update vehicle",
+          "name": "Update Vehicle",
           "request": {
             "method": "PUT",
             "header": [
@@ -90,75 +236,59 @@
               "raw": "{\n  \"vehicleType\": \"TRUCK\",\n  \"brand\": \"Volvo\",\n  \"model\": \"FH16\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/api/vehicles/{{vehicleId}}",
+              "raw": "{{baseUrl}}/api/vehicles/{{vehicleId}}",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "vehicles",
                 "{{vehicleId}}"
               ]
             },
-            "description": "Partially update vehicle fields (userId, vehicleNumber, vehicleType, brand, model). Fields omitted are left unchanged."
+            "description": "Partially update vehicle fields (userId, vehicleNumber, vehicleType, brand, model). Fields omitted are left unchanged. Returns 200."
           },
           "response": []
         },
         {
-          "name": "Delete vehicle",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/api/vehicles/{{vehicleId}}",
-              "host": [
-                "http://localhost:8080/api"
-              ],
-              "path": [
-                "vehicles",
-                "{{vehicleId}}"
-              ]
-            },
-            "description": "Delete a vehicle. Returns 204 No Content, or 404 if not found."
-          },
-          "response": []
-        },
-        {
-          "name": "Vehicle entry",
+          "name": "Vehicle Entry",
           "request": {
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/vehicles/{{vehicleId}}/entry",
+              "raw": "{{baseUrl}}/api/vehicles/{{vehicleId}}/entry",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "vehicles",
                 "{{vehicleId}}",
                 "entry"
               ]
             },
-            "description": "Simulate vehicle entry. Requires the vehicle to exist and to be OUTSIDE. Sets status INSIDE and stores entryTime. Returns 409 if already INSIDE."
+            "description": "Simulate vehicle entry. Vehicle must exist and be OUTSIDE. Sets status INSIDE and stores entryTime. Returns 409 if already INSIDE."
           },
           "response": []
         },
         {
-          "name": "Vehicle exit",
+          "name": "Vehicle Exit",
           "request": {
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/vehicles/{{vehicleId}}/exit",
+              "raw": "{{baseUrl}}/api/vehicles/{{vehicleId}}/exit",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "vehicles",
                 "{{vehicleId}}",
                 "exit"
               ]
             },
-            "description": "Simulate vehicle exit. Requires the vehicle to be INSIDE. Sets status OUTSIDE and stores exitTime. Returns 409 if not currently INSIDE."
+            "description": "Simulate vehicle exit. Vehicle must be INSIDE. Sets status OUTSIDE and stores exitTime. Returns 409 if not currently INSIDE."
           },
           "response": []
         }
@@ -168,7 +298,7 @@
       "name": "Parking Service",
       "item": [
         {
-          "name": "Create parking space",
+          "name": "Create Space",
           "request": {
             "method": "POST",
             "header": [
@@ -182,30 +312,52 @@
               "raw": "{\n  \"ownerId\": 1,\n  \"spaceNumber\": \"A-01\",\n  \"location\": \"Level 1, Near Gate A\",\n  \"city\": \"Colombo\",\n  \"zone\": \"Zone-A\",\n  \"pricePerHour\": 2.50\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/api/parking/spaces",
+              "raw": "{{baseUrl}}/api/parking/spaces",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "parking",
                 "spaces"
               ]
             },
-            "description": "Register a parking space. Returns 201 with the new space in status AVAILABLE."
+            "description": "Register a parking space. Returns 201 Created with the new space in status AVAILABLE."
           },
           "response": []
         },
         {
-          "name": "Search parking spaces",
+          "name": "Get Spaces",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/parking/spaces?city=Colombo&available=true",
+              "raw": "{{baseUrl}}/api/parking/spaces",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
+                "parking",
+                "spaces"
+              ]
+            },
+            "description": "List all parking spaces (no filters). Returns 200 with an array."
+          },
+          "response": []
+        },
+        {
+          "name": "Search by City",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/spaces?city=Colombo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
                 "parking",
                 "spaces"
               ],
@@ -213,46 +365,70 @@
                 {
                   "key": "city",
                   "value": "Colombo",
-                  "description": "Optional: exact city (case-insensitive)"
-                },
-                {
-                  "key": "zone",
-                  "value": "Zone-A",
-                  "description": "Optional: exact zone (case-insensitive)"
-                },
-                {
-                  "key": "available",
-                  "value": "true",
-                  "description": "Optional: true = only AVAILABLE, false = only non-available"
+                  "description": "Exact city (case-insensitive)"
                 }
               ]
             },
-            "description": "Search/filter parking spaces. All query parameters are optional and combinable."
+            "description": "Search spaces by city (case-insensitive exact match). Returns 200 with the matching spaces."
           },
           "response": []
         },
         {
-          "name": "Get parking space",
+          "name": "Search by Zone",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/parking/spaces/{{spaceId}}",
+              "raw": "{{baseUrl}}/api/parking/spaces?zone=Zone-A",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "parking",
-                "spaces",
-                "{{spaceId}}"
+                "spaces"
+              ],
+              "query": [
+                {
+                  "key": "zone",
+                  "value": "Zone-A",
+                  "description": "Exact zone (case-insensitive)"
+                }
               ]
             },
-            "description": "Retrieve a single parking space by id. Returns 200, or 404 if not found."
+            "description": "Search spaces by zone (case-insensitive exact match). Returns 200 with the matching spaces."
           },
           "response": []
         },
         {
-          "name": "Update parking space",
+          "name": "Search Available",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/spaces?available=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "parking",
+                "spaces"
+              ],
+              "query": [
+                {
+                  "key": "available",
+                  "value": "true",
+                  "description": "true = only AVAILABLE spaces, false = only non-available"
+                }
+              ]
+            },
+            "description": "Search only AVAILABLE spaces. Returns 200 with the matching spaces."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Space",
           "request": {
             "method": "PUT",
             "header": [
@@ -266,42 +442,23 @@
               "raw": "{\n  \"city\": \"Galle\",\n  \"zone\": \"Zone-B\",\n  \"pricePerHour\": 3.75\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/api/parking/spaces/{{spaceId}}",
+              "raw": "{{baseUrl}}/api/parking/spaces/{{spaceId}}",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "parking",
                 "spaces",
                 "{{spaceId}}"
               ]
             },
-            "description": "Partially update space fields. Fields omitted are left unchanged."
+            "description": "Partially update space fields (ownerId, spaceNumber, location, city, zone, pricePerHour). Fields omitted are left unchanged. Returns 200."
           },
           "response": []
         },
         {
-          "name": "Delete parking space",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/api/parking/spaces/{{spaceId}}",
-              "host": [
-                "http://localhost:8080/api"
-              ],
-              "path": [
-                "parking",
-                "spaces",
-                "{{spaceId}}"
-              ]
-            },
-            "description": "Delete a parking space. Returns 204, or 404 if not found."
-          },
-          "response": []
-        },
-        {
-          "name": "Update parking space status",
+          "name": "Update Status",
           "request": {
             "method": "PUT",
             "header": [
@@ -315,23 +472,29 @@
               "raw": "{\n  \"status\": \"OCCUPIED\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/api/parking/spaces/{{spaceId}}/status",
+              "raw": "{{baseUrl}}/api/parking/spaces/{{spaceId}}/status",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "parking",
                 "spaces",
                 "{{spaceId}}",
                 "status"
               ]
             },
-            "description": "Manual/IoT status update. Status must be one of AVAILABLE, RESERVED, OCCUPIED, MAINTENANCE."
+            "description": "Manual/IoT status update. Status must be one of AVAILABLE, RESERVED, OCCUPIED, MAINTENANCE. Returns 200."
           },
           "response": []
-        },
+        }
+      ]
+    },
+    {
+      "name": "Reservation",
+      "item": [
         {
-          "name": "Create reservation",
+          "name": "Create Reservation",
           "request": {
             "method": "POST",
             "header": [
@@ -345,30 +508,32 @@
               "raw": "{\n  \"userId\": 1,\n  \"vehicleId\": 1,\n  \"parkingSpaceId\": 1,\n  \"startTime\": \"2026-08-15T10:00:00\",\n  \"endTime\": \"2026-08-15T12:00:00\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/api/parking/reservations",
+              "raw": "{{baseUrl}}/api/parking/reservations",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "parking",
                 "reservations"
               ]
             },
-            "description": "Reserve an AVAILABLE parking space. Space becomes RESERVED, reservation is CONFIRMED. Returns 409 if space is not available."
+            "description": "Reserve an AVAILABLE parking space. The space becomes RESERVED and the reservation is CONFIRMED. Returns 201, or 409 if the space is not available, or 400 if startTime is not before endTime."
           },
           "response": []
         },
         {
-          "name": "Get reservation",
+          "name": "Get Reservation",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/parking/reservations/{{reservationId}}",
+              "raw": "{{baseUrl}}/api/parking/reservations/{{reservationId}}",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "parking",
                 "reservations",
                 "{{reservationId}}"
@@ -379,16 +544,17 @@
           "response": []
         },
         {
-          "name": "List reservations by user",
+          "name": "Get User Reservations",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/parking/reservations/user/{{userId}}",
+              "raw": "{{baseUrl}}/api/parking/reservations/user/{{userId}}",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "parking",
                 "reservations",
                 "user",
@@ -400,44 +566,46 @@
           "response": []
         },
         {
-          "name": "Cancel reservation",
+          "name": "Cancel Reservation",
           "request": {
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/parking/reservations/{{reservationId}}/cancel",
+              "raw": "{{baseUrl}}/api/parking/reservations/{{reservationId}}/cancel",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "parking",
                 "reservations",
                 "{{reservationId}}",
                 "cancel"
               ]
             },
-            "description": "Cancel a reservation. Reservation becomes CANCELLED, space returns to AVAILABLE. Returns 409 if already cancelled/completed."
+            "description": "Cancel a reservation. Reservation becomes CANCELLED and the space returns to AVAILABLE. Returns 200, or 409 if already cancelled/completed."
           },
           "response": []
         },
         {
-          "name": "Release reservation",
+          "name": "Release Reservation",
           "request": {
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/parking/reservations/{{reservationId}}/release",
+              "raw": "{{baseUrl}}/api/parking/reservations/{{reservationId}}/release",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "parking",
                 "reservations",
                 "{{reservationId}}",
                 "release"
               ]
             },
-            "description": "Complete/release a reservation. Reservation becomes COMPLETED, space returns to AVAILABLE. Returns 409 unless reservation is CONFIRMED."
+            "description": "Complete/release a reservation. Reservation becomes COMPLETED and the space returns to AVAILABLE. Returns 200, or 409 unless the reservation is CONFIRMED."
           },
           "response": []
         }
@@ -447,7 +615,7 @@
       "name": "Payment Service",
       "item": [
         {
-          "name": "Process payment (CARD - success)",
+          "name": "Create Payment",
           "request": {
             "method": "POST",
             "header": [
@@ -461,83 +629,31 @@
               "raw": "{\n  \"reservationId\": 1,\n  \"userId\": 1,\n  \"amount\": 500,\n  \"paymentMethod\": \"CARD\",\n  \"cardNumber\": \"4111 1111 1111 1111\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/api/payments",
+              "raw": "{{baseUrl}}/api/payments",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "payments"
               ]
             },
-            "description": "Process a card payment. Card 4111 1111 1111 1111 passes the mock gateway and returns 201 with status SUCCESS and a masked card number. Repeating the same reservationId returns 409 (duplicate payment)."
+            "description": "Process a payment. Requires an existing reservation in the Parking Service. Card 4111 1111 1111 1111 succeeds (status SUCCESS, 201). Cards ending in 0002 are declined (status FAILED). The full card number is never stored - only a masked form is returned. Repeating a successful payment for the same reservation returns 409."
           },
           "response": []
         },
         {
-          "name": "Process payment (CARD - declined)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reservationId\": 2,\n  \"userId\": 1,\n  \"amount\": 500,\n  \"paymentMethod\": \"CARD\",\n  \"cardNumber\": \"4000 0000 0000 0002\"\n}"
-            },
-            "url": {
-              "raw": "http://localhost:8080/api/payments",
-              "host": [
-                "http://localhost:8080/api"
-              ],
-              "path": [
-                "payments"
-              ]
-            },
-            "description": "Cards ending in 0002 are declined by the mock gateway. Returns 201 with status FAILED (the transaction is still stored, so a retry is possible)."
-          },
-          "response": []
-        },
-        {
-          "name": "Process payment (CASH)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reservationId\": 3,\n  \"userId\": 1,\n  \"amount\": 300,\n  \"paymentMethod\": \"CASH\"\n}"
-            },
-            "url": {
-              "raw": "http://localhost:8080/api/payments",
-              "host": [
-                "http://localhost:8080/api"
-              ],
-              "path": [
-                "payments"
-              ]
-            },
-            "description": "Cash payments always succeed and do not require a cardNumber. Returns 201 with status SUCCESS."
-          },
-          "response": []
-        },
-        {
-          "name": "Get payment",
+          "name": "Get Payment",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/payments/{{paymentId}}",
+              "raw": "{{baseUrl}}/api/payments/{{paymentId}}",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "payments",
                 "{{paymentId}}"
               ]
@@ -547,16 +663,17 @@
           "response": []
         },
         {
-          "name": "List payments by reservation",
+          "name": "Get Reservation Payment",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/payments/reservation/{{reservationId}}",
+              "raw": "{{baseUrl}}/api/payments/reservation/{{reservationId}}",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "payments",
                 "reservation",
                 "{{reservationId}}"
@@ -567,16 +684,17 @@
           "response": []
         },
         {
-          "name": "List payments by user",
+          "name": "Get User Payments",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/payments/user/{{userId}}",
+              "raw": "{{baseUrl}}/api/payments/user/{{userId}}",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "payments",
                 "user",
                 "{{userId}}"
@@ -587,22 +705,330 @@
           "response": []
         },
         {
-          "name": "Get payment receipt",
+          "name": "Get Receipt",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/payments/{{paymentId}}/receipt",
+              "raw": "{{baseUrl}}/api/payments/{{paymentId}}/receipt",
               "host": [
-                "http://localhost:8080/api"
+                "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "payments",
                 "{{paymentId}}",
                 "receipt"
               ]
             },
-            "description": "Get the digital receipt for a successful payment. Returns 200 with receiptId, transactionId, reservationId, userId, amount, paymentMethod, paymentStatus, paymentDate. Returns 404 for failed/pending payments."
+            "description": "Get the digital receipt for a SUCCESS payment. Returns 200 with receiptId, transactionId, reservationId, userId, amount, paymentMethod, paymentStatus, paymentDate. Returns 404 for failed/pending payments."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Cases",
+      "item": [
+        {
+          "name": "Duplicate User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Smith\",\n  \"email\": \"duplicate@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "description": "Run this request twice. The second call returns 409 Conflict because the email is already registered."
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"wrong-password\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "login"
+              ]
+            },
+            "description": "Returns 401 Unauthorized when the password is incorrect or the email does not exist."
+          },
+          "response": []
+        },
+        {
+          "name": "User Not Found",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "999999"
+              ]
+            },
+            "description": "Returns 404 Not Found for a user id that does not exist."
+          },
+          "response": []
+        },
+        {
+          "name": "Vehicle Not Found",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vehicles/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vehicles",
+                "999999"
+              ]
+            },
+            "description": "Returns 404 Not Found for a vehicle id that does not exist."
+          },
+          "response": []
+        },
+        {
+          "name": "Duplicate Vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"vehicleNumber\": \"DUP-0001\",\n  \"vehicleType\": \"CAR\",\n  \"brand\": \"Toyota\",\n  \"model\": \"Camry\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/vehicles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vehicles"
+              ]
+            },
+            "description": "Run this request twice. The second call returns 409 Conflict because the vehicle number is already registered."
+          },
+          "response": []
+        },
+        {
+          "name": "Vehicle Already Inside",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vehicles/{{vehicleId}}/entry",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vehicles",
+                "{{vehicleId}}",
+                "entry"
+              ]
+            },
+            "description": "Run Vehicle Entry (in Vehicle Service folder) first, then run this. Returns 409 Conflict because the vehicle is already INSIDE."
+          },
+          "response": []
+        },
+        {
+          "name": "Vehicle Already Outside",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vehicles/{{vehicleId}}/exit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vehicles",
+                "{{vehicleId}}",
+                "exit"
+              ]
+            },
+            "description": "Returns 409 Conflict when the vehicle is not currently INSIDE."
+          },
+          "response": []
+        },
+        {
+          "name": "Parking Space Not Found",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/spaces/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "parking",
+                "spaces",
+                "999999"
+              ]
+            },
+            "description": "Returns 404 Not Found for a space id that does not exist."
+          },
+          "response": []
+        },
+        {
+          "name": "Parking Space Already Reserved",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 2,\n  \"vehicleId\": 2,\n  \"parkingSpaceId\": 1,\n  \"startTime\": \"2026-08-15T14:00:00\",\n  \"endTime\": \"2026-08-15T16:00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "parking",
+                "reservations"
+              ]
+            },
+            "description": "Create a reservation on the same space first (in the Reservation folder), then run this. Returns 409 Conflict because the space is already reserved."
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Reservation Time",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"vehicleId\": 1,\n  \"parkingSpaceId\": 1,\n  \"startTime\": \"2026-08-15T12:00:00\",\n  \"endTime\": \"2026-08-15T10:00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "parking",
+                "reservations"
+              ]
+            },
+            "description": "Returns 400 Bad Request because startTime must be before endTime."
+          },
+          "response": []
+        },
+        {
+          "name": "Duplicate Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": 1,\n  \"userId\": 1,\n  \"amount\": 500,\n  \"paymentMethod\": \"CARD\",\n  \"cardNumber\": \"4111 1111 1111 1111\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments"
+              ]
+            },
+            "description": "Create a successful payment for reservationId 1 first (in the Payment Service folder), then run this. Returns 409 Conflict because a successful payment already exists for the reservation."
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": 2,\n  \"userId\": 1,\n  \"amount\": 500,\n  \"paymentMethod\": \"CARD\",\n  \"cardNumber\": \"4111 1111 1111 1112\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments"
+              ]
+            },
+            "description": "Returns 400 Bad Request because the card number fails Luhn validation."
           },
           "response": []
         }
