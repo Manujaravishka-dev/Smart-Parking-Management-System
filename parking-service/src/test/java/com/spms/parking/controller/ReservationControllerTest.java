@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -84,6 +85,46 @@ class ReservationControllerTest {
         mockMvc.perform(get("/parking/reservations/{id}", reservationId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("CONFIRMED")));
+    }
+
+    @Test
+    void createReservation_spaceOccupied_returns409() throws Exception {
+        long spaceId = createSpace();
+
+        String statusBody = """
+                {"status":"OCCUPIED"}
+                """;
+
+        mockMvc.perform(put("/parking/spaces/{id}/status", spaceId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statusBody))
+                .andExpect(status().isOk());
+
+        String body = reservationBody(1L, 1L, spaceId, START, END);
+
+        mockMvc.perform(post("/parking/reservations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", containsString("not available")));
+    }
+
+    @Test
+    void createReservation_malformedJson_returns400() throws Exception {
+        String body = """
+                {"userId":1,"vehicleId":1,"parkingSpaceId":1,
+                """;
+
+        mockMvc.perform(post("/parking/reservations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getReservation_invalidId_returns400() throws Exception {
+        mockMvc.perform(get("/parking/reservations/abc"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

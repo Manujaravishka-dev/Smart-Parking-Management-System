@@ -187,7 +187,7 @@ class VehicleServiceTest {
     @Test
     void vehicleEntry_setsInsideAndEntryTime() {
         Vehicle vehicle = vehicle(1L, "ABC-1234");
-        when(vehicleRepository.findById(1L)).thenReturn(Optional.of(vehicle));
+        when(vehicleRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(vehicle));
         when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         VehicleResponse response = vehicleService.vehicleEntry(1L);
@@ -200,7 +200,7 @@ class VehicleServiceTest {
     void vehicleEntry_alreadyInside_throws() {
         Vehicle vehicle = vehicle(1L, "ABC-1234");
         vehicle.setStatus(VehicleStatus.INSIDE);
-        when(vehicleRepository.findById(1L)).thenReturn(Optional.of(vehicle));
+        when(vehicleRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(vehicle));
 
         assertThrows(VehicleAlreadyInsideException.class, () -> vehicleService.vehicleEntry(1L));
         verify(vehicleRepository, never()).save(any(Vehicle.class));
@@ -208,7 +208,7 @@ class VehicleServiceTest {
 
     @Test
     void vehicleEntry_notFound_throws() {
-        when(vehicleRepository.findById(99L)).thenReturn(Optional.empty());
+        when(vehicleRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
         assertThrows(VehicleNotFoundException.class, () -> vehicleService.vehicleEntry(99L));
     }
@@ -217,7 +217,7 @@ class VehicleServiceTest {
     void vehicleExit_setsOutsideAndExitTime() {
         Vehicle vehicle = vehicle(1L, "ABC-1234");
         vehicle.setStatus(VehicleStatus.INSIDE);
-        when(vehicleRepository.findById(1L)).thenReturn(Optional.of(vehicle));
+        when(vehicleRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(vehicle));
         when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         VehicleResponse response = vehicleService.vehicleExit(1L);
@@ -229,7 +229,7 @@ class VehicleServiceTest {
     @Test
     void vehicleExit_notInside_throws() {
         Vehicle vehicle = vehicle(1L, "ABC-1234");
-        when(vehicleRepository.findById(1L)).thenReturn(Optional.of(vehicle));
+        when(vehicleRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(vehicle));
 
         assertThrows(VehicleNotInsideException.class, () -> vehicleService.vehicleExit(1L));
         verify(vehicleRepository, never()).save(any(Vehicle.class));
@@ -237,7 +237,7 @@ class VehicleServiceTest {
 
     @Test
     void vehicleExit_notFound_throws() {
-        when(vehicleRepository.findById(99L)).thenReturn(Optional.empty());
+        when(vehicleRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
         assertThrows(VehicleNotFoundException.class, () -> vehicleService.vehicleExit(99L));
     }

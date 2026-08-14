@@ -182,6 +182,37 @@ class UserControllerTest {
                 .andExpect(jsonPath("$", hasSize(0)));
     }
 
+    @Test
+    void getUser_invalidId_returns400() throws Exception {
+        mockMvc.perform(get("/users/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Invalid value for parameter")));
+    }
+
+    @Test
+    void register_invalidRole_returns400() throws Exception {
+        String body = """
+                {"name":"Bad Role","email":"badrole@example.com","password":"password123","role":"NINJA"}
+                """;
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void register_malformedJson_returns400() throws Exception {
+        String body = """
+                {"name":"Broken JSON",
+                """;
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
     private long register(String email, String password) throws Exception {
         String body = objectMapper.writeValueAsString(java.util.Map.of(
                 "name", "Alice Smith",

@@ -30,6 +30,7 @@ import com.spms.payment.entity.PaymentMethod;
 import com.spms.payment.entity.PaymentStatus;
 import com.spms.payment.exception.DuplicatePaymentException;
 import com.spms.payment.exception.InvalidCardDataException;
+import com.spms.payment.exception.ParkingServiceUnavailableException;
 import com.spms.payment.exception.PaymentNotFoundException;
 import com.spms.payment.exception.ReceiptNotAvailableException;
 import com.spms.payment.exception.ReservationNotFoundException;
@@ -142,6 +143,16 @@ class PaymentServiceTest {
         when(reservationClient.exists(1L)).thenReturn(false);
 
         assertThrows(ReservationNotFoundException.class, () -> paymentService.processPayment(request));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void processPayment_parkingServiceUnavailable_throws() {
+        CreatePaymentRequest request = request(1L, 1L, "500", PaymentMethod.CARD, "4111111111111111");
+
+        when(reservationClient.exists(1L)).thenThrow(new ParkingServiceUnavailableException());
+
+        assertThrows(ParkingServiceUnavailableException.class, () -> paymentService.processPayment(request));
         verify(paymentRepository, never()).save(any(Payment.class));
     }
 

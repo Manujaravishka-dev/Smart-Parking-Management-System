@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.spms.payment.client.ReservationClient;
+import com.spms.payment.exception.ParkingServiceUnavailableException;
 
 @SpringBootTest(properties = {
         "eureka.client.enabled=false",
@@ -132,6 +133,50 @@ class PaymentControllerTest {
                         .content(body))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message", containsString("Reservation not found")));
+    }
+
+    @Test
+    void processPayment_parkingServiceUnavailable_returns503() throws Exception {
+        when(reservationClient.exists(anyLong())).thenThrow(new ParkingServiceUnavailableException());
+        String body = paymentBody(1011L, 1L, "500", "CARD", "4111111111111111");
+
+        mockMvc.perform(post("/payments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.message", containsString("unavailable")));
+    }
+
+    @Test
+    void processPayment_invalidPaymentMethod_returns400() throws Exception {
+        ObjectNode node = objectMapper.createObjectNode()
+                .put("reservationId", 1012L)
+                .put("userId", 1L)
+                .put("amount", "500")
+                .put("paymentMethod", "BITCOIN");
+
+        mockMvc.perform(post("/payments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(node.toString()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void processPayment_malformedJson_returns400() throws Exception {
+        String body = """
+                {"reservationId":1013,
+                """;
+
+        mockMvc.perform(post("/payments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getPayment_invalidId_returns400() throws Exception {
+        mockMvc.perform(get("/payments/abc"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

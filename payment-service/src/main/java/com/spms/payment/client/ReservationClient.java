@@ -3,7 +3,10 @@ package com.spms.payment.client;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+
+import com.spms.payment.exception.ParkingServiceUnavailableException;
 
 @Component
 public class ReservationClient {
@@ -23,6 +26,8 @@ public class ReservationClient {
             return true;
         } catch (HttpClientErrorException.NotFound e) {
             return false;
+        } catch (ResourceAccessException e) {
+            throw new ParkingServiceUnavailableException();
         }
     }
 }

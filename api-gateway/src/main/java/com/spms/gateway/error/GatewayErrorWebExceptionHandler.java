@@ -46,7 +46,8 @@ public class GatewayErrorWebExceptionHandler implements ErrorWebExceptionHandler
 
         ServerRequest request = ServerRequest.create(exchange, serverCodecConfigurer.getReaders());
         Map<String, Object> attributes = errorAttributes.getErrorAttributes(request,
-                ErrorAttributeOptions.of(ErrorAttributeOptions.Include.MESSAGE));
+                ErrorAttributeOptions.of(ErrorAttributeOptions.Include.MESSAGE,
+                        ErrorAttributeOptions.Include.ERROR, ErrorAttributeOptions.Include.PATH));
 
         HttpStatusCode status = determineStatus(attributes, ex);
         response.setStatusCode(status);

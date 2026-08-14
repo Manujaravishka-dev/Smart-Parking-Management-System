@@ -49,6 +49,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, request, ex.getMessage());
     }
 
+    @ExceptionHandler(ParkingServiceUnavailableException.class)
+    public ResponseEntity<ApiError> handleParkingServiceUnavailable(ParkingServiceUnavailableException ex,
+            HttpServletRequest request) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE, request, ex.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
         String message = ex.getBindingResult().getFieldErrors().stream()

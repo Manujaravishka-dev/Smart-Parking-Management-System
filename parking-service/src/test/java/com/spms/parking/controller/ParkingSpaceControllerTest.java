@@ -85,6 +85,24 @@ class ParkingSpaceControllerTest {
     }
 
     @Test
+    void getSpace_invalidId_returns400() throws Exception {
+        mockMvc.perform(get("/parking/spaces/abc"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createSpace_malformedJson_returns400() throws Exception {
+        String body = """
+                {"ownerId":1,"spaceNumber":
+                """;
+
+        mockMvc.perform(post("/parking/spaces")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void listAll_returnsArrayContainingCreatedSpace() throws Exception {
         createSpace("ALL-0001", "Colombo", "Zone-A");
 

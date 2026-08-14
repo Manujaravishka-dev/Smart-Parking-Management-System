@@ -215,6 +215,37 @@ class VehicleControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void getVehicle_invalidId_returns400() throws Exception {
+        mockMvc.perform(get("/vehicles/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Invalid value for parameter")));
+    }
+
+    @Test
+    void register_invalidVehicleType_returns400() throws Exception {
+        String body = """
+                {"userId":1,"vehicleNumber":"BAD-0001","vehicleType":"HELICOPTER","brand":"X","model":"Y"}
+                """;
+
+        mockMvc.perform(post("/vehicles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void register_malformedJson_returns400() throws Exception {
+        String body = """
+                {"userId":1,"vehicleNumber":
+                """;
+
+        mockMvc.perform(post("/vehicles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
     private long register(String vehicleNumber) throws Exception {
         return registerForUser(1L, vehicleNumber);
     }

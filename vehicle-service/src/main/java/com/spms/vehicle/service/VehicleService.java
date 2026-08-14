@@ -92,7 +92,7 @@ public class VehicleService {
 
     @Transactional
     public VehicleResponse vehicleEntry(Long id) {
-        Vehicle vehicle = findVehicle(id);
+        Vehicle vehicle = findVehicleForUpdate(id);
         if (vehicle.getStatus() == VehicleStatus.INSIDE) {
             throw new VehicleAlreadyInsideException(id);
         }
@@ -105,7 +105,7 @@ public class VehicleService {
 
     @Transactional
     public VehicleResponse vehicleExit(Long id) {
-        Vehicle vehicle = findVehicle(id);
+        Vehicle vehicle = findVehicleForUpdate(id);
         if (vehicle.getStatus() != VehicleStatus.INSIDE) {
             throw new VehicleNotInsideException(id);
         }
@@ -118,6 +118,11 @@ public class VehicleService {
 
     private Vehicle findVehicle(Long id) {
         return vehicleRepository.findById(id)
+                .orElseThrow(() -> new VehicleNotFoundException(id));
+    }
+
+    private Vehicle findVehicleForUpdate(Long id) {
+        return vehicleRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new VehicleNotFoundException(id));
     }
 
