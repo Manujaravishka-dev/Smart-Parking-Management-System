@@ -41,7 +41,7 @@ smart-parking-management-system/
 ├── user-service/         # User management (implemented — Phase 4)
 ├── vehicle-service/      # Vehicle management (implemented — Phase 5)
 ├── parking-service/      # Parking spaces & reservations (implemented — Phase 6)
-├── payment-service/      # (placeholder — later phase)
+├── payment-service/      # Payments & receipts (implemented — Phase 7)
 ├── docs/                 # Design/architecture documentation
 ├── postman_collection.json  # Postman collection (grows with each phase)
 ├── pom.xml               # Parent aggregator (packaging=pom)
@@ -60,9 +60,9 @@ The root `pom.xml` is a Maven **parent aggregator**: it manages dependency versi
 | User Service (`user-service`) | **Implemented (Phase 4)** |
 | Vehicle Service (`vehicle-service`) | **Implemented (Phase 5)** |
 | Parking Service (`parking-service`) | **Implemented (Phase 6)** |
-| Payment Service (`payment-service`) | Placeholder module only |
+| Payment Service (`payment-service`) | **Implemented (Phase 7)** |
 
-Placeholder modules contain only a `pom.xml` (they build as empty JARs) and will be implemented in subsequent phases.
+All services are now implemented; no placeholder modules remain.
 
 ## Building the Project
 
@@ -405,14 +405,133 @@ Status values: `PENDING`, `CONFIRMED`, `CANCELLED`, `COMPLETED`. New reservation
 
 Errors use the shared JSON shape (`timestamp`, `status`, `error`, `path`, `message`).
 
-## Current Architecture (Phase 6)
+## Payment Service
+
+### Purpose
+
+The **Payment Service** handles billing for parking reservations. It processes payments against a **mock payment gateway** (no real Stripe/PayPal/Visa), validates card data, prevents duplicate payments for the same reservation, stores every payment transaction, generates digital receipts, and exposes payment status retrieval. It is exposed through the API Gateway at `http://localhost:8080/api/payments/**`.
+
+### Port
+
+The Payment Service listens on **port 8084** (`http://localhost:8084/payments/...`) when reached directly; clients should use the Gateway.
+
+### Configuration
+
+All configuration comes from the **Config Server** (`payment-service.yml`, served at `http://localhost:8888/payment-service/default`): port `8084`, PostgreSQL datasource with env-var credentials (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`), Eureka registration, and shared JPA settings.
+
+The local `application.yml` only points at the Config Server:
+`spring.config.import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}`.
+
+### How to Run
+
+Start **Eureka Server**, **Config Server**, then:
+
+```bash
+# Windows
+mvnw.cmd -pl payment-service spring-boot:run
+
+# macOS / Linux
+./mvnw -pl payment-service spring-boot:run
+```
+
+### Mock Payment Gateway
+
+Payments are processed by an in-process **mock gateway** (`MockPaymentGateway`) — no external provider is contacted. The outcome is **deterministic** so the API is fully testable:
+
+- `CASH` and `MOCK_WALLET` payments **always succeed**.
+- `CARD` payments succeed unless the card number ends with `0002` (a documented mock "declined" card, e.g. `4000000000000002`), in which case the transaction is stored with status `FAILED`.
+- Each transaction receives a generated `transactionId` (e.g. `TXN-4B4F9C2E...`).
+
+### Card Validation
+
+Before processing, card numbers are validated (**invalid card data → `400`**):
+
+- Required when `paymentMethod` is `CARD` — missing/blank → `400`.
+- 13–19 digits (spaces/hyphens allowed) and must pass the **Luhn checksum** — else `400`.
+- The **full card number is never stored**; only a masked form (`************1111`) is returned in the create response.
+
+### Payment Entity
+
+`Payment` fields: `id`, `reservationId`, `userId`, `amount`, `paymentMethod`, `transactionId`, `status`, `paymentDate`, `createdAt`.
+
+- `paymentMethod`: `CARD`, `CASH`, `MOCK_WALLET`.
+- `status`: `PENDING`, `SUCCESS`, `FAILED`.
+
+### REST API
+
+All endpoints are reachable through the Gateway (`http://localhost:8080/api/payments/...`) and directly (`http://localhost:8084/payments/...`).
+
+| Method | Path | Description | Success |
+| --- | --- | --- | --- |
+| `POST` | `/api/payments` | Process a payment | `201` |
+| `GET` | `/api/payments/{id}` | Retrieve a payment transaction | `200` |
+| `GET` | `/api/payments/reservation/{reservationId}` | List payments for a reservation | `200` |
+| `GET` | `/api/payments/user/{userId}` | List payments of a user | `200` |
+| `GET` | `/api/payments/{id}/receipt` | Get the digital receipt for a successful payment | `200` |
+
+### Processing a Payment
+
+`POST /api/payments`:
+
+```json
+{
+  "reservationId": 1,
+  "userId": 1,
+  "amount": 500,
+  "paymentMethod": "CARD",
+  "cardNumber": "4111 1111 1111 1111"
+}
+```
+
+Flow:
+
+1. Request body is validated — missing/invalid fields → `400`.
+2. Card data is validated (required for `CARD`, Luhn-valid format) — else `400`.
+3. The reservation is looked up in the **Parking Service** (`GET /parking/reservations/{id}`) — if it does not exist → `404`.
+4. Duplicate prevention: if a **successful** payment already exists for the same `reservationId` → `409`. A failed attempt does **not** block a retry.
+5. The mock gateway generates a `transactionId` and decides `SUCCESS`/`FAILED`.
+6. The transaction is stored and returned as `201` (status `SUCCESS` or `FAILED`).
+
+Example response:
+
+```json
+{
+  "id": 1,
+  "reservationId": 1,
+  "userId": 1,
+  "amount": 500,
+  "paymentMethod": "CARD",
+  "transactionId": "TXN-4B4F9C2E1A3D5F7E8A0B",
+  "status": "SUCCESS",
+  "paymentDate": "2026-08-14T10:30:04",
+  "createdAt": "2026-08-14T10:30:04",
+  "maskedCardNumber": "************1111"
+}
+```
+
+### Digital Receipt
+
+`GET /api/payments/{id}/receipt` returns the receipt **only for `SUCCESS` payments**; for a failed/pending payment → `404`. The receipt contains: `receiptId`, `transactionId`, `reservationId`, `userId`, `amount`, `paymentMethod`, `paymentStatus`, `paymentDate`.
+
+### Error Handling
+
+Errors use the shared JSON shape (`timestamp`, `status`, `error`, `path`, `message`):
+
+| Condition | Status |
+| --- | --- |
+| Invalid/missing payment data or invalid card | `400` |
+| Reservation not found (Parking Service lookup) | `404` |
+| Payment / receipt not found | `404` |
+| Duplicate successful payment for a reservation | `409` |
+
+## Current Architecture (Phase 7)
 
 ```
                         ┌─────────────────┐
                         │  eureka-server  │  Service registry (8761)
                         │   (Phase 1)     │
                         └────────┬────────┘
-                          register / discover │
+                  register / discover │
    ┌───────────────┐           │     ┌───────────────────┐
    │ config-server │───────────┘     │    api-gateway    │  (8080)
    │   (Phase 2)   │                 │     (Phase 3)     │
@@ -421,5 +540,7 @@ Errors use the shared JSON shape (`timestamp`, `status`, `error`, `path`, `messa
            │ serve config                      │ + Eureka service IDs
            ▼                                   ▼
    user-service / vehicle-service / parking-service / payment-service
-                    (planned, later phases)
+                        (all implemented)
 ```
+
+The Payment Service depends on the **Parking Service** only to verify that a reservation exists before charging it (`GET /parking/reservations/{id}`); the Parking Service base URL is configurable via `parking.service.base-url` (default `http://localhost:8083`).

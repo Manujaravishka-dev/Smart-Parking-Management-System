@@ -442,6 +442,171 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Payment Service",
+      "item": [
+        {
+          "name": "Process payment (CARD - success)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": 1,\n  \"userId\": 1,\n  \"amount\": 500,\n  \"paymentMethod\": \"CARD\",\n  \"cardNumber\": \"4111 1111 1111 1111\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/payments",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "Process a card payment. Card 4111 1111 1111 1111 passes the mock gateway and returns 201 with status SUCCESS and a masked card number. Repeating the same reservationId returns 409 (duplicate payment)."
+          },
+          "response": []
+        },
+        {
+          "name": "Process payment (CARD - declined)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": 2,\n  \"userId\": 1,\n  \"amount\": 500,\n  \"paymentMethod\": \"CARD\",\n  \"cardNumber\": \"4000 0000 0000 0002\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/payments",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "Cards ending in 0002 are declined by the mock gateway. Returns 201 with status FAILED (the transaction is still stored, so a retry is possible)."
+          },
+          "response": []
+        },
+        {
+          "name": "Process payment (CASH)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": 3,\n  \"userId\": 1,\n  \"amount\": 300,\n  \"paymentMethod\": \"CASH\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/payments",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "Cash payments always succeed and do not require a cardNumber. Returns 201 with status SUCCESS."
+          },
+          "response": []
+        },
+        {
+          "name": "Get payment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/payments/{{paymentId}}",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "payments",
+                "{{paymentId}}"
+              ]
+            },
+            "description": "Retrieve a single payment transaction by id. Returns 200, or 404 if not found."
+          },
+          "response": []
+        },
+        {
+          "name": "List payments by reservation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/payments/reservation/{{reservationId}}",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "payments",
+                "reservation",
+                "{{reservationId}}"
+              ]
+            },
+            "description": "List all payment attempts (SUCCESS and FAILED) for a reservation. Returns 200 with an array."
+          },
+          "response": []
+        },
+        {
+          "name": "List payments by user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/payments/user/{{userId}}",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "payments",
+                "user",
+                "{{userId}}"
+              ]
+            },
+            "description": "List all payment transactions belonging to a user. Returns 200 with an array."
+          },
+          "response": []
+        },
+        {
+          "name": "Get payment receipt",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/payments/{{paymentId}}/receipt",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "payments",
+                "{{paymentId}}",
+                "receipt"
+              ]
+            },
+            "description": "Get the digital receipt for a successful payment. Returns 200 with receiptId, transactionId, reservationId, userId, amount, paymentMethod, paymentStatus, paymentDate. Returns 404 for failed/pending payments."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
