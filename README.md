@@ -38,9 +38,9 @@ smart-parking-management-system/
 ├── eureka-server/        # Service registry (implemented — Phase 1)
 ├── config-server/        # Centralized config (implemented — Phase 2)
 ├── api-gateway/          # API gateway (implemented — Phase 3)
-├── user-service/         # (placeholder — later phase)
-├── vehicle-service/      # (placeholder — later phase)
-├── parking-service/      # (placeholder — later phase)
+├── user-service/         # User management (implemented — Phase 4)
+├── vehicle-service/      # Vehicle management (implemented — Phase 5)
+├── parking-service/      # Parking spaces & reservations (implemented — Phase 6)
 ├── payment-service/      # (placeholder — later phase)
 ├── docs/                 # Design/architecture documentation
 ├── postman_collection.json  # Postman collection (grows with each phase)
@@ -57,9 +57,9 @@ The root `pom.xml` is a Maven **parent aggregator**: it manages dependency versi
 | Eureka Server (`eureka-server`) | **Implemented (Phase 1)** |
 | Config Server (`config-server`) | **Implemented (Phase 2)** |
 | API Gateway (`api-gateway`) | **Implemented (Phase 3)** |
-| User Service (`user-service`) | Placeholder module only |
-| Vehicle Service (`vehicle-service`) | Placeholder module only |
-| Parking Service (`parking-service`) | Placeholder module only |
+| User Service (`user-service`) | **Implemented (Phase 4)** |
+| Vehicle Service (`vehicle-service`) | **Implemented (Phase 5)** |
+| Parking Service (`parking-service`) | **Implemented (Phase 6)** |
 | Payment Service (`payment-service`) | Placeholder module only |
 
 Placeholder modules contain only a `pom.xml` (they build as empty JARs) and will be implemented in subsequent phases.
@@ -256,7 +256,156 @@ POST http://localhost:8080/api/payments
 
 An unmatched path (e.g. `GET /api/unknown`) returns `404` with the same JSON error shape.
 
-## Current Architecture (Phase 3)
+## Vehicle Service
+
+### Purpose
+
+The **Vehicle Service** manages vehicles owned by registered users: registration, updates, retrieval, listing per user, deletion, and **simulated parking entry/exit** tracking. It is exposed to clients through the API Gateway at `http://localhost:8080/api/vehicles/**`.
+
+### Port
+
+The Vehicle Service listens on **port 8082** (`http://localhost:8082`) when reached directly; clients should use the Gateway.
+
+### Configuration
+
+All configuration comes from the **Config Server** (`vehicle-service.yml`, served at `http://localhost:8888/vehicle-service/default`):
+
+| Property | Source |
+| --- | --- |
+| Port `8082`, datasource URL, `DB_USERNAME`, `DB_PASSWORD` | `config-server/.../config/vehicle-service.yml` (env-var driven with defaults) |
+| Eureka registration + `spring.jpa.hibernate.ddl-auto` | `config-server/.../config/application.yml` (shared) |
+
+The local `application.yml` only points at the Config Server:
+`spring.config.import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}`.
+
+### How to Run
+
+Start **Eureka Server**, **Config Server**, then:
+
+```bash
+# Windows
+mvnw.cmd -pl vehicle-service spring-boot:run
+
+# macOS / Linux
+./mvnw -pl vehicle-service spring-boot:run
+```
+
+### REST API
+
+All endpoints are reachable through the Gateway (`http://localhost:8080/api/vehicles/...`) and directly (`http://localhost:8082/vehicles/...`).
+
+| Method | Path | Description | Success |
+| --- | --- | --- | --- |
+| `POST` | `/api/vehicles` | Register a vehicle | `201` |
+| `GET` | `/api/vehicles/{id}` | Retrieve a vehicle | `200` |
+| `GET` | `/api/vehicles/user/{userId}` | List vehicles of a user | `200` |
+| `PUT` | `/api/vehicles/{id}` | Update vehicle fields | `200` |
+| `DELETE` | `/api/vehicles/{id}` | Delete a vehicle | `204` |
+| `POST` | `/api/vehicles/{id}/entry` | Simulate vehicle entry | `200` |
+| `POST` | `/api/vehicles/{id}/exit` | Simulate vehicle exit | `200` |
+
+`vehicleType` is one of `CAR`, `MOTORCYCLE`, `TRUCK`, `BUS`, `VAN`. Status is `OUTSIDE` (default) or `INSIDE`. Vehicle numbers are normalized to uppercase and must be unique.
+
+Error responses use the shared JSON shape (`timestamp`, `status`, `error`, `path`, `message`): `400` invalid body, `404` vehicle not found, `409` duplicate vehicle number or illegal entry/exit.
+
+### Entry/Exit Flow
+
+- **Entry** (`POST /api/vehicles/{id}/entry`): the vehicle must exist (else `404`) and must not already be `INSIDE` (else `409`). The status is set to `INSIDE` and `entryTime` is stored.
+- **Exit** (`POST /api/vehicles/{id}/exit`): the vehicle must exist (else `404`) and must currently be `INSIDE` (else `409`). The status is set to `OUTSIDE` and `exitTime` is stored.
+
+`entryTime`/`exitTime` are exposed in the vehicle response alongside the current `status`.
+
+## Parking Service
+
+### Purpose
+
+The **Parking Service** lets parking owners manage parking spaces and lets drivers search, filter, and reserve them. It also simulates IoT/manual status updates on spaces. It is exposed through the API Gateway at `http://localhost:8080/api/parking/**`.
+
+### Port
+
+The Parking Service listens on **port 8083** (`http://localhost:8083/parking/...`) when reached directly; clients should use the Gateway.
+
+### Configuration
+
+All configuration comes from the **Config Server** (`parking-service.yml`, served at `http://localhost:8888/parking-service/default`): port `8083`, PostgreSQL datasource with env-var credentials (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`), Eureka registration, and shared JPA settings.
+
+The local `application.yml` only points at the Config Server:
+`spring.config.import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}`.
+
+### How to Run
+
+Start **Eureka Server**, **Config Server**, then:
+
+```bash
+# Windows
+mvnw.cmd -pl parking-service spring-boot:run
+
+# macOS / Linux
+./mvnw -pl parking-service spring-boot:run
+```
+
+### Parking Spaces
+
+`ParkingSpace` fields: `id`, `ownerId`, `spaceNumber`, `location`, `city`, `zone`, `pricePerHour`, `status`, `createdAt`, `updatedAt`. New spaces start as `AVAILABLE`.
+
+Status values: `AVAILABLE`, `RESERVED`, `OCCUPIED`, `MAINTENANCE`.
+
+| Method | Path | Description | Success |
+| --- | --- | --- | --- |
+| `POST` | `/api/parking/spaces` | Register a parking space | `201` |
+| `GET` | `/api/parking/spaces` | Search spaces with optional filters | `200` |
+| `GET` | `/api/parking/spaces/{id}` | Retrieve a space | `200` |
+| `PUT` | `/api/parking/spaces/{id}` | Update space fields | `200` |
+| `DELETE` | `/api/parking/spaces/{id}` | Delete a space | `204` |
+| `PUT` | `/api/parking/spaces/{id}/status` | Manual/IoT status update | `200` |
+
+**Search/filter** (all optional, combinable):
+
+```
+GET /api/parking/spaces?city=Colombo
+GET /api/parking/spaces?zone=Zone-A
+GET /api/parking/spaces?available=true
+GET /api/parking/spaces?city=Colombo&available=true
+```
+
+- `city`, `zone`: case-insensitive exact match.
+- `available=true` → only `AVAILABLE` spaces; `available=false` → only non-available spaces.
+
+**Manual status update** (simulated IoT):
+
+```json
+PUT /api/parking/spaces/{id}/status
+{ "status": "OCCUPIED" }
+```
+
+### Reservations
+
+`Reservation` fields: `id`, `userId`, `vehicleId`, `parkingSpaceId`, `startTime`, `endTime`, `status`, `createdAt`.
+
+Status values: `PENDING`, `CONFIRMED`, `CANCELLED`, `COMPLETED`. New reservations are created as `CONFIRMED`.
+
+| Method | Path | Description | Success |
+| --- | --- | --- | --- |
+| `POST` | `/api/parking/reservations` | Reserve an available space | `201` |
+| `GET` | `/api/parking/reservations/{id}` | Retrieve a reservation | `200` |
+| `GET` | `/api/parking/reservations/user/{userId}` | List a user's reservations | `200` |
+| `POST` | `/api/parking/reservations/{id}/cancel` | Cancel a reservation | `200` |
+| `POST` | `/api/parking/reservations/{id}/release` | Complete/release a reservation | `200` |
+
+**Reservation flow** (`POST /api/parking/reservations`):
+
+1. Parking space must exist — else `404`.
+2. Parking space must be `AVAILABLE` — else `409` (prevents double booking).
+3. `userId` and `vehicleId` must be provided — else `400`.
+4. `startTime` must be before `endTime` — else `400`.
+5. Reservation is created as `CONFIRMED` and the space changes `AVAILABLE → RESERVED`.
+6. **Concurrency safety**: the space row is read with a **pessimistic write lock** (`SELECT ... FOR UPDATE`) inside the reservation transaction, so two simultaneous reservation attempts on the same space serialize — exactly one succeeds, the other gets `409`.
+
+**Cancel** → reservation `CANCELLED`, space back to `AVAILABLE`. **Release** → reservation `COMPLETED`, space back to `AVAILABLE`. Repeating cancel/release in the wrong state returns `409`.
+
+Errors use the shared JSON shape (`timestamp`, `status`, `error`, `path`, `message`).
+
+## Current Architecture (Phase 6)
 
 ```
                         ┌─────────────────┐

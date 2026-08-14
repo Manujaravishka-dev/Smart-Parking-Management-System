@@ -2,8 +2,446 @@
   "info": {
     "_postman_id": "3f2a9c1e-7b4d-4f6a-9e2d-5a8c1b3d7e0f",
     "name": "Smart Parking Management System",
-    "description": "REST API collection for the Smart Parking Management System (SPMS). Requests will be added as each microservice is implemented.",
+    "description": "REST API collection for the Smart Parking Management System (SPMS). Requests are added as each microservice is implemented.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "item": []
+  "item": [
+    {
+      "name": "Vehicle Service",
+      "item": [
+        {
+          "name": "Register vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"vehicleNumber\": \"ABC-1234\",\n  \"vehicleType\": \"CAR\",\n  \"brand\": \"Toyota\",\n  \"model\": \"Camry\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/vehicles",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "vehicles"
+              ]
+            },
+            "description": "Register a vehicle. Returns 201 Created with the new vehicle including status OUTSIDE."
+          },
+          "response": []
+        },
+        {
+          "name": "Get vehicle",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/vehicles/{{vehicleId}}",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "vehicles",
+                "{{vehicleId}}"
+              ]
+            },
+            "description": "Retrieve a single vehicle by id. Returns 200, or 404 if not found."
+          },
+          "response": []
+        },
+        {
+          "name": "List vehicles by user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/vehicles/user/{{userId}}",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "vehicles",
+                "user",
+                "{{userId}}"
+              ]
+            },
+            "description": "List all vehicles belonging to a user. Returns 200 with an array (possibly empty)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update vehicle",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleType\": \"TRUCK\",\n  \"brand\": \"Volvo\",\n  \"model\": \"FH16\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/vehicles/{{vehicleId}}",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "vehicles",
+                "{{vehicleId}}"
+              ]
+            },
+            "description": "Partially update vehicle fields (userId, vehicleNumber, vehicleType, brand, model). Fields omitted are left unchanged."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete vehicle",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/vehicles/{{vehicleId}}",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "vehicles",
+                "{{vehicleId}}"
+              ]
+            },
+            "description": "Delete a vehicle. Returns 204 No Content, or 404 if not found."
+          },
+          "response": []
+        },
+        {
+          "name": "Vehicle entry",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/vehicles/{{vehicleId}}/entry",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "vehicles",
+                "{{vehicleId}}",
+                "entry"
+              ]
+            },
+            "description": "Simulate vehicle entry. Requires the vehicle to exist and to be OUTSIDE. Sets status INSIDE and stores entryTime. Returns 409 if already INSIDE."
+          },
+          "response": []
+        },
+        {
+          "name": "Vehicle exit",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/vehicles/{{vehicleId}}/exit",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "vehicles",
+                "{{vehicleId}}",
+                "exit"
+              ]
+            },
+            "description": "Simulate vehicle exit. Requires the vehicle to be INSIDE. Sets status OUTSIDE and stores exitTime. Returns 409 if not currently INSIDE."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Parking Service",
+      "item": [
+        {
+          "name": "Create parking space",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ownerId\": 1,\n  \"spaceNumber\": \"A-01\",\n  \"location\": \"Level 1, Near Gate A\",\n  \"city\": \"Colombo\",\n  \"zone\": \"Zone-A\",\n  \"pricePerHour\": 2.50\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/parking/spaces",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "parking",
+                "spaces"
+              ]
+            },
+            "description": "Register a parking space. Returns 201 with the new space in status AVAILABLE."
+          },
+          "response": []
+        },
+        {
+          "name": "Search parking spaces",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/parking/spaces?city=Colombo&available=true",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "parking",
+                "spaces"
+              ],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "Colombo",
+                  "description": "Optional: exact city (case-insensitive)"
+                },
+                {
+                  "key": "zone",
+                  "value": "Zone-A",
+                  "description": "Optional: exact zone (case-insensitive)"
+                },
+                {
+                  "key": "available",
+                  "value": "true",
+                  "description": "Optional: true = only AVAILABLE, false = only non-available"
+                }
+              ]
+            },
+            "description": "Search/filter parking spaces. All query parameters are optional and combinable."
+          },
+          "response": []
+        },
+        {
+          "name": "Get parking space",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/parking/spaces/{{spaceId}}",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "parking",
+                "spaces",
+                "{{spaceId}}"
+              ]
+            },
+            "description": "Retrieve a single parking space by id. Returns 200, or 404 if not found."
+          },
+          "response": []
+        },
+        {
+          "name": "Update parking space",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"Galle\",\n  \"zone\": \"Zone-B\",\n  \"pricePerHour\": 3.75\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/parking/spaces/{{spaceId}}",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "parking",
+                "spaces",
+                "{{spaceId}}"
+              ]
+            },
+            "description": "Partially update space fields. Fields omitted are left unchanged."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete parking space",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/parking/spaces/{{spaceId}}",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "parking",
+                "spaces",
+                "{{spaceId}}"
+              ]
+            },
+            "description": "Delete a parking space. Returns 204, or 404 if not found."
+          },
+          "response": []
+        },
+        {
+          "name": "Update parking space status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"OCCUPIED\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/parking/spaces/{{spaceId}}/status",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "parking",
+                "spaces",
+                "{{spaceId}}",
+                "status"
+              ]
+            },
+            "description": "Manual/IoT status update. Status must be one of AVAILABLE, RESERVED, OCCUPIED, MAINTENANCE."
+          },
+          "response": []
+        },
+        {
+          "name": "Create reservation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"vehicleId\": 1,\n  \"parkingSpaceId\": 1,\n  \"startTime\": \"2026-08-15T10:00:00\",\n  \"endTime\": \"2026-08-15T12:00:00\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/parking/reservations",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "parking",
+                "reservations"
+              ]
+            },
+            "description": "Reserve an AVAILABLE parking space. Space becomes RESERVED, reservation is CONFIRMED. Returns 409 if space is not available."
+          },
+          "response": []
+        },
+        {
+          "name": "Get reservation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/parking/reservations/{{reservationId}}",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "parking",
+                "reservations",
+                "{{reservationId}}"
+              ]
+            },
+            "description": "Retrieve a reservation by id. Returns 200, or 404 if not found."
+          },
+          "response": []
+        },
+        {
+          "name": "List reservations by user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/parking/reservations/user/{{userId}}",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "parking",
+                "reservations",
+                "user",
+                "{{userId}}"
+              ]
+            },
+            "description": "List all reservations belonging to a user. Returns 200 with an array (possibly empty)."
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel reservation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/parking/reservations/{{reservationId}}/cancel",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "parking",
+                "reservations",
+                "{{reservationId}}",
+                "cancel"
+              ]
+            },
+            "description": "Cancel a reservation. Reservation becomes CANCELLED, space returns to AVAILABLE. Returns 409 if already cancelled/completed."
+          },
+          "response": []
+        },
+        {
+          "name": "Release reservation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/parking/reservations/{{reservationId}}/release",
+              "host": [
+                "http://localhost:8080/api"
+              ],
+              "path": [
+                "parking",
+                "reservations",
+                "{{reservationId}}",
+                "release"
+              ]
+            },
+            "description": "Complete/release a reservation. Reservation becomes COMPLETED, space returns to AVAILABLE. Returns 409 unless reservation is CONFIRMED."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
 }
