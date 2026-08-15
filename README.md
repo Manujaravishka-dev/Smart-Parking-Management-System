@@ -285,13 +285,19 @@ Import it into Postman (**Import > Upload Files**). The collection contains **6 
 
 **Suggested flow** (with all services running): Register a user → Create a vehicle → Create a space → Create a reservation on that space → Create a payment for that reservation → Get the receipt. Several Error Cases intentionally depend on a prior success (e.g. duplicate user/vehicle/payment, already-inside) — their descriptions explain the prerequisite step.
 
-## Eureka Dashboard
+## Postman Collection
 
-Once all services are running, the Eureka dashboard at `http://localhost:8761` shows every registered application instance. Add the real screenshot here:
+[View Postman Collection](./postman_collection.json)
 
-![Eureka Dashboard](./docs/screenshots/eureka_dashboard.png)
+## Screenshots
 
-To capture it: start all seven services in the order above, open `http://localhost:8761` in a browser, wait ~30 seconds for all instances to register, and take a full-page screenshot of the dashboard showing all applications in **UP** state (a screenshot guide is included in `docs/README.md`).
+### Screenshot 1
+
+![Screenshot 1](./docs/Screenshot%201.png)
+
+### Screenshot 2
+
+![Screenshot 2](./docs/Screenshot%202.png)
 
 ## Error Handling
 
