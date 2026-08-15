@@ -50,10 +50,10 @@ The system is designed to be extended later with real IoT sensors, a real paymen
    └───────┬───────┘                           │ routes /api/** via lb:// + Eureka
            │ serve config to all services      ▼
            ▼                      ┌──────────────────────────────┐
-   ┌──────────────┐               │ user-service   (8081)        │
-   │ PostgreSQL   │               │ vehicle-service(8082)        │
-   │ (per service)│<──────────────│ parking-service(8083)        │
-   └──────────────┘               │ payment-service(8084)        │
+    ┌──────────────────┐            │ user-service   (8081)        │
+    │ PostgreSQL       │            │ vehicle-service(8082)        │
+    │ smart_parking_db │<───────────│ parking-service(8083)        │
+    └──────────────────┘            │ payment-service(8084)        │
                                   └──────────────────────────────┘
 ```
 
@@ -95,9 +95,9 @@ Centralized configuration server (native profile). Serves every service's config
 | `EUREKA_SERVER_URL` | `http://localhost:8761/eureka` | Eureka registry URL |
 | `DB_HOST` | `localhost` | Database host |
 | `DB_PORT` | `5432` | Database port |
-| `DB_NAME` | service-specific (`spms_user`, `spms_vehicle`, `spms_parking`, `spms_payment`) | Database name |
+| `DB_NAME` | `smart_parking_db` | Database name |
 | `DB_USERNAME` | `postgres` | Database user |
-| `DB_PASSWORD` | `postgres` | Database password (dev-only placeholder) |
+| `DB_PASSWORD` | `1122` | Database password (dev-only placeholder) |
 | `JPA_DDL_AUTO` | `update` | Hibernate DDL mode |
 | `CONFIG_SERVER_URL` | `http://localhost:8888` | Config Server URL used by clients |
 
@@ -153,14 +153,14 @@ Processes billing for reservations against an in-process **mock payment gateway*
 
 ## Database Design
 
-Each microservice **owns its own database** (database-per-service pattern). Services never share tables; cross-service data (e.g. a user's vehicle, or a payment's reservation) is referenced by **ID only**, and ownership is enforced by the owning service.
+All services share one **PostgreSQL database** (`smart_parking_db`). Each service owns its own set of tables (no table-name collisions); cross-service data (e.g. a user's vehicle, or a payment's reservation) is referenced by **ID only**, and ownership is enforced by the owning service.
 
-| Service | Database (default `DB_NAME`) | Owns | Key entities / rules |
-| --- | --- | --- | --- |
-| User Service | `spms_user` | Users | `User` — `email` unique, `password` BCrypt-hashed, `role` DRIVER/OWNER |
-| Vehicle Service | `spms_vehicle` | Vehicles | `Vehicle` — `vehicleNumber` unique, `status` OUTSIDE/INSIDE, `userId` reference to User Service |
-| Parking Service | `spms_parking` | Spaces + Reservations | `ParkingSpace` — status AVAILABLE/RESERVED/OCCUPIED/MAINTENANCE; `Reservation` — status PENDING/CONFIRMED/CANCELLED/COMPLETED, references `userId`/`vehicleId`/`parkingSpaceId` |
-| Payment Service | `spms_payment` | Payments | `Payment` — `reservationId`/`userId` references, `transactionId` unique, status PENDING/SUCCESS/FAILED; card data never persisted |
+| Service | Owns | Key entities / rules |
+| --- | --- | --- |
+| User Service | Users | `User` — `email` unique, `password` BCrypt-hashed, `role` DRIVER/OWNER |
+| Vehicle Service | Vehicles | `Vehicle` — `vehicleNumber` unique, `status` OUTSIDE/INSIDE, `userId` reference to User Service |
+| Parking Service | Spaces + Reservations | `ParkingSpace` — status AVAILABLE/RESERVED/OCCUPIED/MAINTENANCE; `Reservation` — status PENDING/CONFIRMED/CANCELLED/COMPLETED, references `userId`/`vehicleId`/`parkingSpaceId` |
+| Payment Service | Payments | `Payment` — `reservationId`/`userId` references, `transactionId` unique, status PENDING/SUCCESS/FAILED; card data never persisted |
 
 Schema is auto-managed by Hibernate (`spring.jpa.hibernate.ddl-auto: update` by default; tests use `create-drop` on in-memory H2).
 
