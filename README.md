@@ -15,6 +15,36 @@ SPMS is decomposed into **seven independent Spring Boot services**, each deploya
 - **Payment Service** — billing, mock payment gateway integration, duplicate-payment prevention, and digital receipts.
 
 Every request flows: `Client -> API Gateway (8080) -> backend service -> database`. Services discover each other via Eureka and pull their configuration from the Config Server, so no backend hostname or port is hardcoded in the gateway.
+## Postman Testing
+
+A complete Postman collection is provided:
+
+- **[postman_collection.json](./postman_collection.json)**
+
+Import it into Postman (**Import > Upload Files**). The collection contains **6 folders** with **39 requests**, all routed through the gateway at `http://localhost:8080` (collection variable `baseUrl`):
+
+1. **User Service** — Register, Login, Get User, Update User.
+2. **Vehicle Service** — Create Vehicle, Get Vehicle, Get User Vehicles, Update Vehicle, Vehicle Entry, Vehicle Exit.
+3. **Parking Service** — Create Space, Get Spaces, Search by City, Search by Zone, Search Available, Update Space, Update Status.
+4. **Reservation** — Create Reservation, Get Reservation, Get User Reservations, Cancel Reservation, Release Reservation.
+5. **Payment Service** — Create Payment, Get Payment, Get Reservation Payment, Get User Payments, Get Receipt.
+6. **Error Cases** — Duplicate User, Invalid Login, User Not Found, Vehicle Not Found, Duplicate Vehicle, Vehicle Already Inside, Vehicle Already Outside, Parking Space Not Found, Parking Space Already Reserved, Invalid Reservation Time, Duplicate Payment, Invalid Payment.
+
+**Suggested flow** (with all services running): Register a user → Create a vehicle → Create a space → Create a reservation on that space → Create a payment for that reservation → Get the receipt. Several Error Cases intentionally depend on a prior success (e.g. duplicate user/vehicle/payment, already-inside) — their descriptions explain the prerequisite step.
+
+## Postman Collection
+
+[View Postman Collection](./postman_collection.json)
+
+## Screenshots
+
+### Screenshot 1
+
+![Screenshot 1](./docs/Screenshot%201.png)
+
+### Screenshot 2
+
+![Screenshot 2](./docs/Screenshot%202.png)
 
 ## Business Problem
 
@@ -268,36 +298,7 @@ java -jar config-server/target/config-server-1.0.0-SNAPSHOT.jar
 mvnw.cmd clean package    # or ./mvnw clean package
 ```
 
-## Postman Testing
 
-A complete Postman collection is provided:
-
-- **[postman_collection.json](./postman_collection.json)**
-
-Import it into Postman (**Import > Upload Files**). The collection contains **6 folders** with **39 requests**, all routed through the gateway at `http://localhost:8080` (collection variable `baseUrl`):
-
-1. **User Service** — Register, Login, Get User, Update User.
-2. **Vehicle Service** — Create Vehicle, Get Vehicle, Get User Vehicles, Update Vehicle, Vehicle Entry, Vehicle Exit.
-3. **Parking Service** — Create Space, Get Spaces, Search by City, Search by Zone, Search Available, Update Space, Update Status.
-4. **Reservation** — Create Reservation, Get Reservation, Get User Reservations, Cancel Reservation, Release Reservation.
-5. **Payment Service** — Create Payment, Get Payment, Get Reservation Payment, Get User Payments, Get Receipt.
-6. **Error Cases** — Duplicate User, Invalid Login, User Not Found, Vehicle Not Found, Duplicate Vehicle, Vehicle Already Inside, Vehicle Already Outside, Parking Space Not Found, Parking Space Already Reserved, Invalid Reservation Time, Duplicate Payment, Invalid Payment.
-
-**Suggested flow** (with all services running): Register a user → Create a vehicle → Create a space → Create a reservation on that space → Create a payment for that reservation → Get the receipt. Several Error Cases intentionally depend on a prior success (e.g. duplicate user/vehicle/payment, already-inside) — their descriptions explain the prerequisite step.
-
-## Postman Collection
-
-[View Postman Collection](./postman_collection.json)
-
-## Screenshots
-
-### Screenshot 1
-
-![Screenshot 1](./docs/Screenshot%201.png)
-
-### Screenshot 2
-
-![Screenshot 2](./docs/Screenshot%202.png)
 
 ## Error Handling
 
